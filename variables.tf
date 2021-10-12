@@ -33,13 +33,13 @@ variable "private_route_table_ids" {
 variable "image_id" {
   description = "AMI of the NAT instance. Default to the latest Amazon Linux 2"
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "instance_types" {
   description = "Candidates of spot instance type for the NAT instance. This is used in the mixed instances policy"
   type        = list
-  default     = ["t3.nano", "t3a.nano"]
+  default     = ["t4g.nano"]
 }
 
 variable "use_spot_instance" {
