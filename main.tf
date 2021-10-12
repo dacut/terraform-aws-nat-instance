@@ -54,17 +54,22 @@ data "aws_ssm_parameter" "amzn2_x86_64" {
 }
 
 locals {
-  instance_families = toset([for instance_type in var.instance_types: split(".", instance_type)])
-  has_arm64_instance_types = anytrue([for instance_family in local.instance_families: length(regexall("[a-z]+[0-9]+g[a-z]*", instance_family)) > 0])
-  default_ami_id = (has_arm64_instance_types ?
-    nonsensitive(data.aws_ssm_parameter.amzn2_arm64.value) :
-    nonsensitive(data.aws_ssm_parameter.amzn2_x86_64.value))
+  instance_families = toset([for instance_type in var.instance_types: split(".", instance_type)[0]])
+  has_arm64_instance_types = anytrue([for instance_family in local.instance_families: length(regexall("^([a-z]+[0-9]+g[a-z]*|a1)$", instance_family)) > 0])
+  has_x86_64_instance_types = anytrue([for instance_family in local.instance_families: length(regexall("^([a-z]+[0-9]+g[a-z]*|a1)$", instance_family)) == 0])
+  image_id = (
+    var.image_id != null ?
+      var.image_id : (
+        local.has_arm64_instance_types ?
+          nonsensitive(data.aws_ssm_parameter.amzn2_arm64.value) :
+          nonsensitive(data.aws_ssm_parameter.amzn2_x86_64.value)))
 }
 
 resource "aws_launch_template" "nat" {
-  name_prefix = var.name
-  image_id    = var.image_id != null ? var.image_id : local.default_ami_id
+  name_prefix = "${var.name}-arm64-"
+  image_id    = local.image_id
   key_name    = var.key_name
+  update_default_version = true
 
   iam_instance_profile {
     arn = aws_iam_instance_profile.nat.arn
@@ -132,14 +137,6 @@ resource "aws_autoscaling_group" "nat" {
         for_each = var.instance_types
         content {
           instance_type = override.value
-          image_id = (
-            var.image_id != null ?
-            var.image_id :
-            (length(regexall("[a-z]+[0-9]+g.*", override.value)) > 0 ?
-              nonsensitive(data.aws_ssm_parameter.amzn2_arm64.value) :
-              nonsensitive(data.aws_ssm_parameter.amzn2_x86_64.value)
-            )
-          )
         }
       }
     }
