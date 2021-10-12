@@ -1,4 +1,4 @@
-# terraform-aws-nat-instance [![CircleCI](https://circleci.com/gh/int128/terraform-aws-nat-instance.svg?style=shield)](https://circleci.com/gh/int128/terraform-aws-nat-instance)
+# terraform-aws-nat-instance
 
 This is a Terraform module which provisions a NAT instance.
 
@@ -33,7 +33,7 @@ module "vpc" {
 }
 
 module "nat" {
-  source = "int128/nat-instance/aws"
+  source = "dacut/nat-instance/aws"
 
   name                        = "main"
   vpc_id                      = module.vpc.vpc_id
